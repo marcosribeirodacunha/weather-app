@@ -3,14 +3,12 @@
   <img alt="GitHub Explorer" src="/img-github/logo_light.svg" width="150px">
 </h1>
 
----
-
 <h4 align="center">Sky Forecast é uma aplicação de previsão do tempo que permite que saber como está o clima em qualquer localidade que desejar.</h4>
 
 Basta digitar o nome do local em que deseja para obter diversas informações como clima atual, velocidade do vento, previsões sobre por hora, dia entre outras informações.
 
 <p align="center">
-  <img alt="Linguagem mais usada Typescript" src="https://img.shields.io/github/languages/top/sergioricardoml/github-explorer?style=flat">
+  <img alt="Linguagem mais usada Typescript" src="https://img.shields.io/github/languages/top/marcosribeirodacunha/weather-app?style=flat">
   <img alt="Objetivo: estudo" src="https://img.shields.io/badge/purpose-study-lightgrey?style=flat">
 </p>
 
@@ -23,7 +21,7 @@ Basta digitar o nome do local em que deseja para obter diversas informações co
 </p>
 
 <p align="center">
-  <img src="/img-github/skyforecast.gif" width="85%">
+  <img src="/img-github/skyforecast.gif" width="90%">
 </p>
 
 # Recursos
@@ -59,9 +57,9 @@ Os ícones aqui utilizados foram providos pelo MET Norway sobre o MIT License (M
 
 Para mais informações sobre os ícones utilizados: [https://api.met.no/weatherapi/weathericon/2.0/documentation](https://api.met.no/weatherapi/weathericon/2.0/documentation)
 
-### Observação
+### _Observação_
 
-**MET Norway**
+**MET Norway** <br />
 Os dados meteorológicos da **primeira versão desta aplicação** são providos pela API pública do Instituto Meteorológico Norueguês (The Norwegian Meteorological Institute), sendo utilizado especificamente o produto "Locationforecast" versão 2.0, que provê informações sobre a previsão do tempo de um local especifico.
 
 Mais informações sobre todos os produtos disponíveis pelo MET Norway podem ser encontradas no seguinte link: [https://api.met.no/](https://api.met.no/)
