@@ -1,193 +1,175 @@
 import React, { useState, useEffect, FormEvent } from 'react';
-import { geocoderApi, weatherApi } from '../../services/api';
+import { Link, useHistory } from 'react-router-dom';
+import usePersistedState from '../../hooks/usePersistedState';
+import useTheme from '../../hooks/useTheme';
+import useSettings from '../../hooks/useSettings';
 
-import { hoursToNow } from '../../helpers/date';
-import Card from '../../components/Card';
-import { Logo, Title, Form, CardContainer } from './styles';
+import { weatherApi } from '../../services/api';
+import { ICurrentForecastResponse } from '../../interfaces/Forecast';
+import IRecentLocation from '../../interfaces/RecentLocation';
 
-interface Climates {
-  properties: {
-    meta: {
-      updated_at: string;
-    };
-    timeseries: {
-      time: string;
-      data: {
-        instant: {
-          details: {
-            air_temperature: number;
-          };
-        };
-        next_1_hours: {
-          summary: {
-            symbol_code: string;
-          };
-        };
-      };
-    }[];
-  };
-  location: {
-    place_id: number;
-    lat: string;
-    lon: string;
-    address: {
-      country_code: string;
-      country: string;
-      state?: string;
-      city?: string;
-      town?: string;
-      suburb?: string;
-      road?: string;
-    };
-  };
-}
+import { loadLocationByName } from '../../services/loadLocation';
+
+import { FlexContainer } from '../../styles/generics';
+import SettingsBar from '../../components/SettingsBar';
+import Card from './Card';
+import {
+  Container,
+  Right,
+  Search,
+  Spotlight,
+  CardsContainer,
+  DiscoverTitle,
+} from './styles';
+import Loader from '../../components/Loader';
 
 const Home: React.FC = () => {
-  const [search, setSearch] = useState('Rio de Janeiro');
-  const [climates, setClimates] = useState<Climates[]>(() => {
-    const storageClimates = localStorage.getItem('@WeatherApp:climates');
-    return storageClimates ? JSON.parse(storageClimates) : [];
-  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [recentsForecast, setRecentsForecast] = useState<
+    ICurrentForecastResponse[]
+  >([]);
+  const [recentLocations, setRecentLocations] = usePersistedState<
+    IRecentLocation[]
+  >('@SkyForecast:recentLocations', []);
 
-  /* Update climates registered */
+  const history = useHistory();
+  const { theme } = useTheme();
+  const { units, language } = useSettings();
+
   useEffect(() => {
-    async function updateClimates() {
-      const updatedClimates = await Promise.all(
-        climates.map(async climate => {
-          const uri = `compact.json?lat=${climate.location.lat}&lon=${climate.location.lon}`;
-          const { data: climateData } = await weatherApi.get<Climates>(uri);
+    if (!recentLocations) return;
 
-          return { ...climate, ...climateData };
-        })
-      );
-      setClimates(updatedClimates);
-    }
+    setIsLoading(true);
+    Promise.all(
+      recentLocations.slice(0, 3).map(
+        async (location): Promise<ICurrentForecastResponse> => {
+          const params = {
+            lat: location.lat,
+            lon: location.lon,
+            units,
+            lang: language,
+            appid: process.env.REACT_APP_API_APPID,
+          };
 
-    updateClimates();
-  }, []);
+          try {
+            const { data } = await weatherApi.get<ICurrentForecastResponse>(
+              'weather',
+              { params }
+            );
 
-  /* Set in the in Local Storage all climates registered */
-  useEffect(() => {
-    localStorage.setItem('@WeatherApp:climates', JSON.stringify(climates));
-  }, [climates]);
+            if (Object.keys(data).length === 0)
+              return {} as ICurrentForecastResponse;
+            return data;
+          } catch (error) {
+            alert('Sorry, something went wrong. Please try again');
+            console.log(error);
+            return {} as ICurrentForecastResponse;
+          }
+        }
+      )
+    ).then(res => {
+      setRecentsForecast(res);
+      setIsLoading(false);
+    });
+  }, [units, language]);
 
-  /* Find latlon from search string and get climate to this location */
+  /* FUNCTION TO LOAD LOCATION INFO FROM A GIVEN CITY AND GET THE FORECAST */
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
 
-    if (search.length <= 1)
-      return alert('Please, type 2 or more word to search a location!');
+    if (!search) {
+      setErrorMessage('Please type a city');
+      return;
+    }
 
     try {
-      // Merging params does not seem to be working on axios 0.19
-      let query = { params: geocoderApi.defaults.params };
-      const {
-        data: [location],
-      } = await geocoderApi.get(`search/${search}`, query);
+      const [city, state, country] = search.split(',');
 
-      const isRegistered = climates.some(
-        climate => climate.location.place_id === location.place_id
-      );
+      /* LOAD CITY INFORMATION */
+      const location = await loadLocationByName({
+        city,
+        state,
+        country,
+        language,
+      });
 
-      // If location is already registered weather api will only be called if
-      // it's necessary to update the climate for that location
-      // (last update was more than 4 hours)
-      if (isRegistered) {
-        const climate = climates.filter(
-          climate => climate.location.place_id === location.place_id
-        )[0];
-        const updatedAt = new Date(climate.properties.meta.updated_at);
-        const diff = hoursToNow(updatedAt);
-
-        if (diff < 4)
-          return alert('This location is already registered and up to date!');
+      if (location === null) {
+        setErrorMessage('Sorry, we could not find this city');
+        return;
       }
 
-      const uri = `compact.json?lat=${location.lat}&lon=${location.lon}`;
-      const { data: climateData } = await weatherApi.get<Climates>(uri);
-
-      const newClimate = {
-        ...climateData,
-        location: {
-          place_id: location.place_id,
-          lat: location.lat,
-          lon: location.lon,
-          address: {
-            country_code: location.address.country_code,
-            country: location.address.country,
-            state: location.address.state,
-            city: location.address.city,
-            town: location.address.town,
-            suburb: location.address.suburb,
-            road: location.address.road,
-          },
-        },
-      };
-
-      const filteredClimates = climates.filter(
-        climate => climate.location.place_id !== newClimate.location.place_id
+      /* VERIFY IF THE LOCATION ALREADY EXISTS IN RECENTS AND SAVE IT THERE */
+      let filteredRecentLocations = recentLocations.filter(
+        recentLocation => recentLocation.osm_id !== location.osm_id
       );
+      filteredRecentLocations.unshift(location);
+      filteredRecentLocations.slice(0, 10);
 
-      setClimates([newClimate, ...filteredClimates]);
-      setSearch('');
-    } catch (err) {
-      alert(
-        'Sorry, an error occurred while processing your request. Please try again!'
-      );
-      console.log(err);
+      setRecentLocations(filteredRecentLocations);
+      setErrorMessage('');
+
+      history.push(`/${location.city}/${location.country}`, {
+        ...location,
+      });
+    } catch (error) {
+      alert('Sorry, something went wrong. Please try again');
+      console.log(error);
     }
   }
 
-  function unregisterClimate(place_id: number) {
-    const filteredClimates = climates.filter(
-      climate => climate.location.place_id !== place_id
-    );
-    setClimates(filteredClimates);
-  }
+  if (isLoading) return <Loader />;
 
   return (
-    <>
-      <Logo>Sky Forecasts</Logo>
+    <Container>
+      {/* HEADER */}
+      <FlexContainer justify="space-between">
+        {/* LOGO */}
+        <Link to="/">
+          <img
+            src={require(`../../assets/logo_${theme}.svg`)}
+            alt="Sky Forecast"
+          />
+        </Link>
+        <Right>
+          <p>My places</p>
+          <SettingsBar />
+        </Right>
+      </FlexContainer>
 
-      <Title>Saiba como está o clima em qualquer localidade que desejar</Title>
-
-      <Form onSubmit={handleSubmit}>
-        <label htmlFor="search">Digite o local</label>
-        <div>
+      <Search>
+        <h1>
+          How is the <Spotlight>weather</Spotlight> in...
+        </h1>
+        <form onSubmit={handleSubmit}>
           <input
             type="text"
-            id="search"
             name="search"
             value={search}
             onChange={e => setSearch(e.target.value)}
+            placeholder="City, state, country"
           />
-          <button type="submit">Pesquisar</button>
-        </div>
-      </Form>
+          <button>Search</button>
+        </form>
+        <span>{errorMessage}</span>
+      </Search>
 
-      <CardContainer>
-        {climates.map(climate => (
-          <Card
-            key={climate.location.place_id}
-            place_id={climate.location.place_id}
-            location={climate.location.address}
-            latlon={{
-              lat: climate.location.lat,
-              lon: climate.location.lon,
-            }}
-            weatherIcon={
-              climate.properties.timeseries[0].data.next_1_hours.summary
-                .symbol_code
-            }
-            temperature={
-              climate.properties.timeseries[0].data.instant.details
-                .air_temperature
-            }
-            unregisterClimate={unregisterClimate}
-          />
-        ))}
-      </CardContainer>
-    </>
+      <DiscoverTitle>Recent locations</DiscoverTitle>
+
+      <CardsContainer>
+        {recentsForecast.map(
+          (data, i) =>
+            Object.keys(data).length >= 0 && (
+              <Card
+                key={recentLocations[i].osm_id}
+                location={recentLocations[i]}
+                forecast={data}
+              />
+            )
+        )}
+      </CardsContainer>
+    </Container>
   );
 };
 

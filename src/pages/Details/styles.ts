@@ -1,117 +1,230 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
+import { shade } from 'polished';
+import { FlexContainer } from '../../styles/generics';
 
-export const Logo = styled.div`
-  font-weight: 700;
-  letter-spacing: 0.25em;
-  font-size: 1.5em;
-`;
-
-export const CardContainer = styled.div`
+/*
+ SIDEBAR
+*/
+export const Aside = styled.aside`
   display: flex;
-  justify-content: space-between;
-  width: 100%;
-  background: rgba(65, 65, 65, 0.7);
-  padding: 2em;
-  border-radius: 1em;
-  margin-bottom: 3em;
+  flex-direction: column;
+  width: 300px;
+  position: fixed;
+  padding: 1.5rem;
+  background: ${({ theme }) => theme.colors.card};
+  height: 100%;
+  border-top-right-radius: 1rem;
+  border-bottom-right-radius: 1rem;
 `;
 
-export const Location = styled.h1`
-  color: #00e5ae;
-  font-size: 2em;
-  margin: 1em 0;
-`;
+/*
+ASIDE CONTENT: -- CURRENT FORECAST
+*/
+export const CurrentForecast = styled(FlexContainer).attrs({
+  direction: 'column',
+  alignItems: 'center',
+})`
+  margin: auto 0;
+  text-align: center;
 
-export const WeatherNow = styled.div`
-  h2 {
-    font-size: 1.5em;
-    font-weight: 500;
-    color: lightgray;
-    margin-bottom: 1em;
+  h1 {
+    font-size: 1.5rem;
   }
 
-  > div {
-    display: flex;
+  > p:first-of-type {
+    color: ${({ theme }) => theme.colors.textSecondary};
+  }
 
-    > p {
-      text-align: center;
+  > p:last-of-type {
+    margin-top: 2rem;
 
-      img {
-        display: block;
-        width: 100%;
-        max-width: 10em;
-        margin: 0 auto;
-      }
+    svg {
+      margin-right: 0.5rem;
+      color: ${({ theme }) => theme.colors.accent};
     }
+  }
+`;
+
+export const Weather = styled.div`
+  margin: 1.5rem 0 0;
+
+  img {
+    width: 10rem;
+    height: auto;
+  }
+
+  p::first-letter {
+    text-transform: uppercase;
   }
 `;
 
 export const Temperature = styled.div`
-  display: flex;
-  flex-direction: column;
-  margin-left: 5em;
-
   strong {
-    font-size: 6em;
-
-    span {
-      font-size: 3rem;
-      font-weight: 500;
-      vertical-align: super;
-      color: gray;
-    }
+    font-weight: 400;
+    font-size: 6rem;
   }
 
-  div {
-    span {
-      font-size: 1.5em;
+  span {
+    font-size: 2rem;
+    color: ${({ theme }) => theme.colors.textSecondary};
+    vertical-align: 100%;
+    margin-left: -1rem;
+  }
 
-      & + span {
-        margin-left: 1.5em;
-      }
-
-      svg {
-        margin-right: 0.25rem;
-      }
-
-      &:first-child svg {
-        color: #eb4034;
-      }
-
-      &:last-child svg {
-        color: #4553f5;
-      }
-    }
+  p {
+    margin-top: -1.5rem;
+    color: ${({ theme }) => theme.colors.textCompletary};
   }
 `;
 
-export const DetailsNow = styled.div`
+/*
+ASIDE CONTENT: -- DAILY FORECAST NAVIGATION
+*/
+export const DailyForecastNavigation = styled.div`
+  margin: auto 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-
-  div {
-    span {
-      color: gray;
-
-      svg {
-        margin-right: 0.5em;
-        font-size: 1.25rem;
-      }
-    }
-
-    p {
-      font-size: 1.5em;
-      margin-left: 1.25em;
-    }
-  }
-`;
-
-export const HourDetails = styled(CardContainer)`
-  margin-bottom: 1em;
   align-items: center;
 
-  img {
-    width: 2.5em;
+  h1 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+  }
+`;
+
+export const DayLink = styled.a<{ active?: boolean }>`
+  width: max-content;
+  margin: 0.5rem auto;
+  cursor: pointer;
+  position: relative;
+
+  p {
+    font-weight: 700;
+  }
+
+  span {
+    display: block;
+    font-size: 0.8rem;
+    margin-top: -0.25rem;
+    color: ${({ theme }) => theme.colors.textSecondary};
+
+    &::first-letter {
+      text-transform: uppercase;
+    }
+  }
+
+  ${props =>
+    props.active &&
+    css`
+      p {
+        color: ${({ theme }) => theme.colors.white};
+      }
+
+      span {
+        color: ${({ theme }) => theme.colors.black};
+      }
+
+      &:before {
+        position: absolute;
+        top: -0.5rem;
+        bottom: -0.5rem;
+        left: -130px;
+        right: -4rem;
+        z-index: -1;
+        content: '';
+        background: ${({ theme }) => theme.colors.accent};
+        border-top-right-radius: 4rem;
+        border-bottom-right-radius: 4rem;
+      }
+    `}
+`;
+
+/*
+MAIN SIDE CONTENT
+*/
+export const MainContent = styled.div`
+  width: calc(100% - 300px);
+  margin-left: auto;
+  padding: 1.5rem;
+`;
+
+export const Search = styled(FlexContainer)`
+  input {
+    min-width: 250px;
+    border: 1px solid transparent;
+    border-right: none;
+    border-top-left-radius: 0.75rem;
+    border-bottom-left-radius: 0.75rem;
+    background: ${({ theme }) => theme.colors.card};
+    color: ${({ theme }) => theme.colors.textPrimary};
+    padding: 0.5rem 0 0.5rem 1rem;
+    transition: border 0.3s;
+
+    &:focus,
+    &:focus + button {
+      border-color: ${({ theme }) => theme.colors.accent};
+    }
+
+    &::placeholder {
+      color: ${({ theme }) => theme.colors.textSecondary};
+    }
+  }
+
+  button {
+    border: 1px solid transparent;
+    border-left: none;
+    border-top-right-radius: 0.75rem;
+    border-bottom-right-radius: 0.75rem;
+    background: ${({ theme }) => theme.colors.card};
+    color: ${({ theme }) => theme.colors.accent};
+    padding: 0.5rem 1rem;
+    font-weight: 700;
+    transition: border 0.3s;
+    margin-right: 1rem;
+
+    &:hover {
+      background: ${({ theme }) => shade(0.1, theme.colors.card)};
+    }
+  }
+`;
+
+export const ErrorMessage = styled.span`
+  color: #f33;
+  letter-spacing: 1px;
+`;
+
+/*
+TODAY / WEEK TABS
+*/
+export const Tab = styled.div`
+  margin: 2rem 0 1rem;
+`;
+
+export const TabLink = styled.a<{ active?: boolean }>`
+  cursor: pointer;
+  color: ${props =>
+    props.active
+      ? props.theme.colors.textPrimary
+      : props.theme.colors.textSecondary};
+
+  ${props =>
+    props.active &&
+    css`
+      font-weight: 700;
+      border-bottom: 2px solid ${({ theme }) => theme.colors.accent};
+    `}
+
+  & + & {
+    margin-left: 1rem;
+  }
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.textPrimary};
+  }
+
+  &:last-child {
+    margin-left: auto !important;
+    display: inline-flex;
+    align-items: center;
   }
 `;
